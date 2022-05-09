@@ -18,8 +18,8 @@ resource "aws_security_group" "ec2_internal_sg" {
     cidr_blocks = [data.aws_vpc.vpc_main.cidr_block]
   }
   ingress {
-    from_port   = 5000
-    to_port     = 5000
+    from_port   = var.ecs_application_port
+    to_port     = var.ecs_application_port
     protocol    = "tcp"
     cidr_blocks = [data.aws_vpc.vpc_main.cidr_block]
   }

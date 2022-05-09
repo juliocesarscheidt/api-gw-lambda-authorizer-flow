@@ -11,7 +11,7 @@ resource "aws_lb" "elb_load_balancer" {
 
 resource "aws_lb_listener" "elb_listener" {
   load_balancer_arn = aws_lb.elb_load_balancer.arn
-  port              = "80"
+  port              = var.ecs_application_port
   protocol          = "TCP"
   default_action {
     type             = "forward"
@@ -24,11 +24,12 @@ resource "aws_lb_listener" "elb_listener" {
 }
 
 resource "aws_lb_target_group" "elb_target_group" {
-  name        = "target-group-${var.env}"
-  target_type = "instance"
-  port        = 5000
-  protocol    = "TCP"
-  vpc_id      = var.vpc_id
+  name                 = "target-group-${var.env}"
+  vpc_id               = var.vpc_id
+  target_type          = "instance"
+  deregistration_delay = 60
+  port                 = var.ecs_application_port
+  protocol             = "TCP"
   tags = merge(var.tags, {
     "Name" = "target-group-${var.env}"
   })

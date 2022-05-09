@@ -5,7 +5,10 @@ resource "aws_iam_instance_profile" "ec2_instance_profile" {
 
 data "template_file" "user_data" {
   template = file("${path.module}/templates/user_data.sh")
-  vars     = {}
+  vars = {
+    ECS_CLUSTER = "${var.ecs_cluster_name}-${var.env}"
+    VOLUME_SIZE = var.ec2_instance_volume_size
+  }
 }
 
 resource "aws_launch_template" "ec2_launch_template" {
@@ -15,7 +18,7 @@ resource "aws_launch_template" "ec2_launch_template" {
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2_instance_profile.name
   }
-  key_name = var.ssh_key_name
+  key_name = var.ec2_ssh_key_name
   network_interfaces {
     associate_public_ip_address = false
     security_groups             = [aws_security_group.ec2_internal_sg.id]

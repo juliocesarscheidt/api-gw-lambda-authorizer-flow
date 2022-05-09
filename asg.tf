@@ -1,9 +1,9 @@
 resource "aws_autoscaling_group" "ec2_asg" {
-  name                      = "ec2-asg-default-ecs-ami-${var.env}"
+  name                      = "ec2-asg-default-ecs-${var.env}"
   capacity_rebalance        = true
-  desired_capacity          = 1
-  max_size                  = length(var.subnet_ids)
-  min_size                  = 0
+  desired_capacity          = lookup(var.ec2_asg_deployment_count, "desired")
+  min_size                  = lookup(var.ec2_asg_deployment_count, "minimum")
+  max_size                  = lookup(var.ec2_asg_deployment_count, "maximum")
   health_check_grace_period = 300
   health_check_type         = "ELB"
   force_delete              = true
@@ -15,7 +15,7 @@ resource "aws_autoscaling_group" "ec2_asg" {
   }
   tag {
     key                 = "Name"
-    value               = "ec2-asg-default-ecs-ami-${var.env}"
+    value               = "ec2-asg-default-ecs-${var.env}"
     propagate_at_launch = false
   }
   depends_on = [
