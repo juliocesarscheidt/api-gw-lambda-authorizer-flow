@@ -6,7 +6,7 @@ variable "aws_region" {
 variable "env" {
   description = "AWS region"
   type        = string
-  default     = "dev"
+  default     = "development"
 }
 
 variable "vpc_id" {
@@ -20,7 +20,31 @@ variable "subnet_ids" {
   default     = []
 }
 
+############################### Lambda ###############################
+variable "lambda_name" {
+  type        = string
+  description = "Lambda Name"
+  default     = "lambda-authorizer"
+}
 
+variable "docker_registry" {
+  type        = string
+  description = "Docker Registry"
+}
+
+variable "lambda_version" {
+  type        = string
+  description = "Lambda Version"
+}
+
+variable "lambda_environment_config" {
+  type = object({
+    JWT_SECRET = string
+    LAMBDA_ENV = string
+  })
+}
+
+############################### ECS ###############################
 variable "ecs_cluster_name" {
   type        = string
   description = "ECS Cluster Name"
@@ -78,7 +102,7 @@ variable "ecs_application_deployment_count" {
   }
 }
 
-
+############################### EC2 ###############################
 variable "ec2_role_name" {
   type        = string
   description = "Instance Role Name"
@@ -118,11 +142,11 @@ variable "ec2_asg_deployment_count" {
   }
 }
 
-
+############################### API GW ###############################
 variable "api_gw_stage_name" {
   type        = string
   description = "API GW Stage Name"
-  default     = "dev"
+  default     = "development"
 }
 
 variable "api_gw_usage_plan_name" {
@@ -150,7 +174,7 @@ variable "api_gw_usage_plan_throttle_settings" {
   }
 }
 
-
+############################### Miscellaneous ###############################
 variable "tags" {
   type        = map(string)
   description = "Additional tags (_e.g._ { BusinessUnit : ABC })"

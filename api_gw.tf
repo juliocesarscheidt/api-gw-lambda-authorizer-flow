@@ -9,58 +9,87 @@ resource "aws_api_gateway_rest_api" "api_gw_rest_api" {
   })
 }
 
-resource "aws_api_gateway_usage_plan" "api_gw_usage_plan" {
-  name = "${var.api_gw_usage_plan_name}-${var.env}"
-  api_stages {
-    api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
-    stage  = aws_api_gateway_stage.api_gw_stage.stage_name
-  }
-  quota_settings {
-    limit  = lookup(var.api_gw_usage_plan_quota_settings, "limit")
-    offset = lookup(var.api_gw_usage_plan_quota_settings, "offset")
-    period = lookup(var.api_gw_usage_plan_quota_settings, "period")
-  }
-  throttle_settings {
-    burst_limit = lookup(var.api_gw_usage_plan_throttle_settings, "burst_limit")
-    rate_limit  = lookup(var.api_gw_usage_plan_throttle_settings, "rate_limit")
-  }
-  tags = merge(var.tags, {
-    "Name" = "${var.api_gw_usage_plan_name}-${var.env}"
-  })
+resource "aws_api_gateway_authorizer" "api_gateway_authorizer" {
+  name                             = "api-gateway-authorizer-${var.env}"
+  authorizer_result_ttl_in_seconds = 0
+  rest_api_id                      = aws_api_gateway_rest_api.api_gw_rest_api.id
+  authorizer_uri                   = aws_lambda_function.lambda_function.invoke_arn
+  authorizer_credentials           = aws_iam_role.lambda_iam_invocation_api_gw_role.arn
+  type                             = "TOKEN"
   depends_on = [
     aws_api_gateway_rest_api.api_gw_rest_api,
-    aws_api_gateway_stage.api_gw_stage,
+    aws_lambda_function.lambda_function,
+    aws_iam_role.lambda_iam_invocation_api_gw_role,
   ]
 }
 
-resource "aws_api_gateway_api_key" "api_gw_api_key" {
-  name = "${var.api_gw_usage_plan_name}-${var.env}-api-key"
-}
+# curl -X GET "$(terraform output -raw api_gateway_invoke_url)"
+# unauthorized
 
-output "aws_api_gateway_api_key_value" {
-  value       = aws_api_gateway_api_key.api_gw_api_key.value
-}
+# export TOKEN=$(./lambda-authorizer/generate_token.py '{"username": "julioscheidt", "email": "julioscheidt@mail.com"}')
+# curl -X GET "$(terraform output -raw api_gateway_invoke_url)" -H "Authorization: ${TOKEN}"
 
-# curl -X GET "$(terraform_0.14.3 output -raw api_gateway_invoke_url)dev/" -H "X-Api-Key: $(terraform_0.14.3 output -raw aws_api_gateway_api_key_value)"
 
-resource "aws_api_gateway_usage_plan_key" "main" {
-  key_id        = aws_api_gateway_api_key.api_gw_api_key.id
-  key_type      = "API_KEY"
-  usage_plan_id = aws_api_gateway_usage_plan.api_gw_usage_plan.id
-  depends_on = [
-    aws_api_gateway_api_key.api_gw_api_key,
-    aws_api_gateway_usage_plan.api_gw_usage_plan,
-  ]
-}
+# resource "aws_api_gateway_usage_plan" "api_gw_usage_plan" {
+#   name = "${var.api_gw_usage_plan_name}-${var.env}"
+#   api_stages {
+#     api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
+#     stage  = aws_api_gateway_stage.api_gw_stage.stage_name
+#   }
+#   quota_settings {
+#     limit  = lookup(var.api_gw_usage_plan_quota_settings, "limit")
+#     offset = lookup(var.api_gw_usage_plan_quota_settings, "offset")
+#     period = lookup(var.api_gw_usage_plan_quota_settings, "period")
+#   }
+#   throttle_settings {
+#     burst_limit = lookup(var.api_gw_usage_plan_throttle_settings, "burst_limit")
+#     rate_limit  = lookup(var.api_gw_usage_plan_throttle_settings, "rate_limit")
+#   }
+#   tags = merge(var.tags, {
+#     "Name" = "${var.api_gw_usage_plan_name}-${var.env}"
+#   })
+#   depends_on = [
+#     aws_api_gateway_rest_api.api_gw_rest_api,
+#     aws_api_gateway_stage.api_gw_stage,
+#   ]
+# }
+
+# resource "aws_api_gateway_api_key" "api_gw_api_key" {
+#   name = "${var.api_gw_usage_plan_name}-${var.env}-api-key"
+# }
+
+# output "aws_api_gateway_api_key_value" {
+#   value       = aws_api_gateway_api_key.api_gw_api_key.value
+# }
+
+# resource "aws_api_gateway_usage_plan_key" "main" {
+#   key_id        = aws_api_gateway_api_key.api_gw_api_key.id
+#   key_type      = "API_KEY"
+#   usage_plan_id = aws_api_gateway_usage_plan.api_gw_usage_plan.id
+#   depends_on = [
+#     aws_api_gateway_api_key.api_gw_api_key,
+#     aws_api_gateway_usage_plan.api_gw_usage_plan,
+#   ]
+# }
+
+# curl -X GET "$(terraform output -raw api_gateway_invoke_url)"
+# forbidden
+
+# curl -X GET "$(terraform output -raw api_gateway_invoke_url)" -H "X-Api-Key: $(terraform output -raw aws_api_gateway_api_key_value)"
+
 
 # resource, method and integration - root
 resource "aws_api_gateway_method" "api_gw_method_root" {
-  rest_api_id        = aws_api_gateway_rest_api.api_gw_rest_api.id
-  resource_id        = aws_api_gateway_rest_api.api_gw_rest_api.root_resource_id
-  api_key_required   = true
+  rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
+  resource_id = aws_api_gateway_rest_api.api_gw_rest_api.root_resource_id
+  # api_key_required   = true
   http_method        = "GET"
-  authorization      = "NONE"
+  authorization      = "CUSTOM"
+  authorizer_id      = aws_api_gateway_authorizer.api_gateway_authorizer.id
   request_parameters = {}
+  depends_on = [
+    aws_api_gateway_authorizer.api_gateway_authorizer,
+  ]
 }
 
 resource "aws_api_gateway_integration" "api_gw_integration_root" {
@@ -92,12 +121,16 @@ resource "aws_api_gateway_resource" "api_gw_resource_healthcheck" {
 }
 
 resource "aws_api_gateway_method" "api_gw_method_healthcheck" {
-  rest_api_id        = aws_api_gateway_rest_api.api_gw_rest_api.id
-  resource_id        = aws_api_gateway_resource.api_gw_resource_healthcheck.id
-  api_key_required   = true
+  rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
+  resource_id = aws_api_gateway_resource.api_gw_resource_healthcheck.id
+  # api_key_required   = true
   http_method        = "GET"
-  authorization      = "NONE"
+  authorization      = "CUSTOM"
+  authorizer_id      = aws_api_gateway_authorizer.api_gateway_authorizer.id
   request_parameters = {}
+  depends_on = [
+    aws_api_gateway_authorizer.api_gateway_authorizer,
+  ]
 }
 
 resource "aws_api_gateway_integration" "api_gw_integration_healthcheck" {
