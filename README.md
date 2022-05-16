@@ -6,11 +6,11 @@ The containers on ECS are reached through a network load balancer pointing to th
 
 > Architecture
 
-![Architecture](./architecture/api-gw-lambda-authorizer.drawio.png)
+![Architecture](./architecture/api-gw-lambda-authorizer.drawio.svg)
 
 > Auth Flow
 
-![Flow](./architecture/api-gw-lambda-authorizer-flow.drawio.png)
+![Flow](./architecture/api-gw-lambda-authorizer-flow.drawio.svg)
 
 ## Deploy with Terraform
 
