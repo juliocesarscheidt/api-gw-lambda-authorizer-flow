@@ -111,6 +111,35 @@ resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_ecr" {
 }
 
 ############################### Lambda Authorizer Invocation ###############################
+resource "aws_iam_policy" "dynamodb_lamdbda_handler_policy" {
+  name   = "dynamodb-lamdbda-handler-policy-${var.env}"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_dynamodb" {
+  role       = aws_iam_role.lambda_iam_role.name
+  policy_arn = aws_iam_policy.dynamodb_lamdbda_handler_policy.arn
+  depends_on = [
+    aws_iam_role.lambda_iam_role,
+    aws_iam_policy.dynamodb_lamdbda_handler_policy,
+  ]
+}
+
+############################### Lambda Authorizer Invocation ###############################
 resource "aws_iam_role" "lambda_iam_invocation_api_gw_role" {
   name               = "lambda-iam-invocation-api-gw-role-${var.env}"
   assume_role_policy = <<EOF
@@ -140,14 +169,13 @@ resource "aws_iam_role_policy" "lambda_iam_invocation_api_gw_policy" {
     {
       "Action": "lambda:InvokeFunction",
       "Effect": "Allow",
-      "Resource": "${aws_lambda_function.lambda_function.arn}"
+      "Resource": "${aws_lambda_function.lambda_function_authorizer.arn}"
     }
   ]
 }
 EOF
   depends_on = [
     aws_iam_role.lambda_iam_invocation_api_gw_role,
-    aws_lambda_function.lambda_function,
+    aws_lambda_function.lambda_function_authorizer,
   ]
 }
-

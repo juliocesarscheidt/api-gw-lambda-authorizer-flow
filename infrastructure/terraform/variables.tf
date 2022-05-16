@@ -21,27 +21,45 @@ variable "subnet_ids" {
 }
 
 ############################### Lambda ###############################
-variable "lambda_name" {
+variable "lambda_authorizer_name" {
   type        = string
-  description = "Lambda Name"
+  description = "Lambda Authorizer Name"
   default     = "lambda-authorizer"
+}
+
+variable "lambda_authorizer_version" {
+  type        = string
+  description = "Lambda Authorizer Version"
+}
+
+variable "lambda_authorizer_environment_config" {
+  type = object({
+    JWT_SECRET = string
+    ENV        = string
+  })
+}
+
+variable "lambda_authenticator_name" {
+  type        = string
+  description = "Lambda Authenticator Name"
+  default     = "lambda-authenticator"
+}
+
+variable "lambda_authenticator_version" {
+  type        = string
+  description = "Lambda Authenticator Version"
+}
+
+variable "lambda_authenticator_environment_config" {
+  type = object({
+    JWT_SECRET = string
+    ENV        = string
+  })
 }
 
 variable "docker_registry" {
   type        = string
   description = "Docker Registry"
-}
-
-variable "lambda_version" {
-  type        = string
-  description = "Lambda Version"
-}
-
-variable "lambda_environment_config" {
-  type = object({
-    JWT_SECRET = string
-    LAMBDA_ENV = string
-  })
 }
 
 ############################### ECS ###############################
@@ -96,9 +114,9 @@ variable "ecs_application_deployment_count" {
   type        = map(number)
   description = "ECS Application Deployment Count"
   default = {
-    desired = 1
-    minimum = 0
-    maximum = 100
+    desired         = 1
+    minimum_percent = 0
+    maximum_percent = 100
   }
 }
 
@@ -136,17 +154,17 @@ variable "ec2_asg_deployment_count" {
   type        = map(number)
   description = "EC2 ASG Deployment Count"
   default = {
-    desired = 1
-    minimum = 0
-    maximum = 1
+    desired      = 1
+    minimum_size = 0
+    maximum_size = 1
   }
 }
 
 ############################### API GW ###############################
-variable "api_gw_stage_name" {
-  type        = string
-  description = "API GW Stage Name"
-  default     = "development"
+variable "api_gw_usage_plan_enabled" {
+  type        = bool
+  description = "API GW Usage Plan Enabled"
+  default     = false
 }
 
 variable "api_gw_usage_plan_name" {

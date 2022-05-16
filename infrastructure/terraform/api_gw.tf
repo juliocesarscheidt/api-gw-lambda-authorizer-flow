@@ -9,75 +9,6 @@ resource "aws_api_gateway_rest_api" "api_gw_rest_api" {
   })
 }
 
-resource "aws_api_gateway_authorizer" "api_gateway_authorizer" {
-  name                             = "api-gateway-authorizer-${var.env}"
-  authorizer_result_ttl_in_seconds = 0
-  rest_api_id                      = aws_api_gateway_rest_api.api_gw_rest_api.id
-  authorizer_uri                   = aws_lambda_function.lambda_function.invoke_arn
-  authorizer_credentials           = aws_iam_role.lambda_iam_invocation_api_gw_role.arn
-  type                             = "TOKEN"
-  depends_on = [
-    aws_api_gateway_rest_api.api_gw_rest_api,
-    aws_lambda_function.lambda_function,
-    aws_iam_role.lambda_iam_invocation_api_gw_role,
-  ]
-}
-
-# curl -X GET "$(terraform output -raw api_gateway_invoke_url)"
-# unauthorized
-
-# export TOKEN=$(./lambda-authorizer/generate_token.py '{"username": "julioscheidt", "email": "julioscheidt@mail.com"}')
-# curl -X GET "$(terraform output -raw api_gateway_invoke_url)" -H "Authorization: ${TOKEN}"
-
-
-# resource "aws_api_gateway_usage_plan" "api_gw_usage_plan" {
-#   name = "${var.api_gw_usage_plan_name}-${var.env}"
-#   api_stages {
-#     api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
-#     stage  = aws_api_gateway_stage.api_gw_stage.stage_name
-#   }
-#   quota_settings {
-#     limit  = lookup(var.api_gw_usage_plan_quota_settings, "limit")
-#     offset = lookup(var.api_gw_usage_plan_quota_settings, "offset")
-#     period = lookup(var.api_gw_usage_plan_quota_settings, "period")
-#   }
-#   throttle_settings {
-#     burst_limit = lookup(var.api_gw_usage_plan_throttle_settings, "burst_limit")
-#     rate_limit  = lookup(var.api_gw_usage_plan_throttle_settings, "rate_limit")
-#   }
-#   tags = merge(var.tags, {
-#     "Name" = "${var.api_gw_usage_plan_name}-${var.env}"
-#   })
-#   depends_on = [
-#     aws_api_gateway_rest_api.api_gw_rest_api,
-#     aws_api_gateway_stage.api_gw_stage,
-#   ]
-# }
-
-# resource "aws_api_gateway_api_key" "api_gw_api_key" {
-#   name = "${var.api_gw_usage_plan_name}-${var.env}-api-key"
-# }
-
-# output "aws_api_gateway_api_key_value" {
-#   value       = aws_api_gateway_api_key.api_gw_api_key.value
-# }
-
-# resource "aws_api_gateway_usage_plan_key" "main" {
-#   key_id        = aws_api_gateway_api_key.api_gw_api_key.id
-#   key_type      = "API_KEY"
-#   usage_plan_id = aws_api_gateway_usage_plan.api_gw_usage_plan.id
-#   depends_on = [
-#     aws_api_gateway_api_key.api_gw_api_key,
-#     aws_api_gateway_usage_plan.api_gw_usage_plan,
-#   ]
-# }
-
-# curl -X GET "$(terraform output -raw api_gateway_invoke_url)"
-# forbidden
-
-# curl -X GET "$(terraform output -raw api_gateway_invoke_url)" -H "X-Api-Key: $(terraform output -raw aws_api_gateway_api_key_value)"
-
-
 # resource, method and integration - root
 resource "aws_api_gateway_method" "api_gw_method_root" {
   rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
@@ -105,6 +36,8 @@ resource "aws_api_gateway_integration" "api_gw_integration_root" {
   connection_type         = "VPC_LINK"
   connection_id           = aws_api_gateway_vpc_link.vpc_link.id
   depends_on = [
+    aws_api_gateway_rest_api.api_gw_rest_api,
+    aws_api_gateway_method.api_gw_method_root,
     aws_lb.elb_load_balancer,
     aws_api_gateway_vpc_link.vpc_link,
   ]
@@ -146,41 +79,114 @@ resource "aws_api_gateway_integration" "api_gw_integration_healthcheck" {
   connection_type         = "VPC_LINK"
   connection_id           = aws_api_gateway_vpc_link.vpc_link.id
   depends_on = [
+    aws_api_gateway_rest_api.api_gw_rest_api,
+    aws_api_gateway_method.api_gw_method_healthcheck,
     aws_lb.elb_load_balancer,
     aws_api_gateway_vpc_link.vpc_link,
   ]
 }
 
-resource "aws_api_gateway_stage" "api_gw_stage" {
-  deployment_id = aws_api_gateway_deployment.api_gw_deploy.id
-  rest_api_id   = aws_api_gateway_rest_api.api_gw_rest_api.id
-  stage_name    = var.api_gw_stage_name
+# resource, method and integration - signin
+resource "aws_api_gateway_resource" "api_gw_resource_signin" {
+  rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
+  parent_id   = aws_api_gateway_method.api_gw_method_root.resource_id
+  path_part   = "signin"
   depends_on = [
-    aws_api_gateway_deployment.api_gw_deploy,
-    aws_api_gateway_rest_api.api_gw_rest_api,
+    aws_api_gateway_rest_api.api_gw_rest_api
   ]
 }
 
+resource "aws_api_gateway_method" "api_gw_method_signin" {
+  rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
+  resource_id = aws_api_gateway_resource.api_gw_resource_signin.id
+  # api_key_required   = true
+  http_method   = "POST"
+  authorization = "NONE"
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+  depends_on = [
+  ]
+}
+
+resource "aws_api_gateway_integration" "api_gw_integration_signin" {
+  rest_api_id             = aws_api_gateway_rest_api.api_gw_rest_api.id
+  resource_id             = aws_api_gateway_method.api_gw_method_signin.resource_id
+  http_method             = aws_api_gateway_method.api_gw_method_signin.http_method
+  uri                     = aws_lambda_function.lambda_function_authenticator.invoke_arn
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  depends_on = [
+    aws_api_gateway_rest_api.api_gw_rest_api,
+    aws_api_gateway_method.api_gw_method_signin,
+    aws_lambda_function.lambda_function_authenticator,
+  ]
+}
+
+# resource, method and integration - signup
+resource "aws_api_gateway_resource" "api_gw_resource_signup" {
+  rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
+  parent_id   = aws_api_gateway_method.api_gw_method_root.resource_id
+  path_part   = "signup"
+  depends_on = [
+    aws_api_gateway_rest_api.api_gw_rest_api
+  ]
+}
+
+resource "aws_api_gateway_method" "api_gw_method_signup" {
+  rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
+  resource_id = aws_api_gateway_resource.api_gw_resource_signup.id
+  # api_key_required   = true
+  http_method   = "POST"
+  authorization = "NONE"
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+  depends_on = [
+  ]
+}
+
+resource "aws_api_gateway_integration" "api_gw_integration_signup" {
+  rest_api_id             = aws_api_gateway_rest_api.api_gw_rest_api.id
+  resource_id             = aws_api_gateway_method.api_gw_method_signup.resource_id
+  http_method             = aws_api_gateway_method.api_gw_method_signup.http_method
+  uri                     = aws_lambda_function.lambda_function_authenticator.invoke_arn
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  depends_on = [
+    aws_api_gateway_rest_api.api_gw_rest_api,
+    aws_api_gateway_method.api_gw_method_signup,
+    aws_lambda_function.lambda_function_authenticator,
+  ]
+}
+
+# deployment
 resource "aws_api_gateway_deployment" "api_gw_deploy" {
   rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
   triggers = {
     redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.api_gw_resource_healthcheck.id,
       aws_api_gateway_method.api_gw_method_root.id,
-      aws_api_gateway_method.api_gw_method_healthcheck.id,
       aws_api_gateway_integration.api_gw_integration_root.id,
+      aws_api_gateway_method.api_gw_method_healthcheck.id,
       aws_api_gateway_integration.api_gw_integration_healthcheck.id,
+      aws_api_gateway_method.api_gw_method_signin.id,
+      aws_api_gateway_integration.api_gw_integration_signin.id,
+      aws_api_gateway_method.api_gw_method_signup.id,
+      aws_api_gateway_integration.api_gw_integration_signup.id,
     ]))
   }
   lifecycle {
     create_before_destroy = true
   }
   depends_on = [
-    aws_api_gateway_resource.api_gw_resource_healthcheck,
+    aws_api_gateway_rest_api.api_gw_rest_api,
     aws_api_gateway_method.api_gw_method_root,
-    aws_api_gateway_method.api_gw_method_healthcheck,
     aws_api_gateway_integration.api_gw_integration_root,
+    aws_api_gateway_method.api_gw_method_healthcheck,
     aws_api_gateway_integration.api_gw_integration_healthcheck,
-    aws_api_gateway_rest_api.api_gw_rest_api
+    aws_api_gateway_method.api_gw_method_signin,
+    aws_api_gateway_integration.api_gw_integration_signin,
+    aws_api_gateway_method.api_gw_method_signup,
+    aws_api_gateway_integration.api_gw_integration_signup,
   ]
 }

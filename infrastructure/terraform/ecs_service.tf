@@ -48,8 +48,8 @@ resource "aws_ecs_service" "ecs_service" {
   scheduling_strategy                = "REPLICA"
   launch_type                        = "EC2"
   desired_count                      = lookup(var.ecs_application_deployment_count, "desired")
-  deployment_minimum_healthy_percent = lookup(var.ecs_application_deployment_count, "minimum")
-  deployment_maximum_percent         = lookup(var.ecs_application_deployment_count, "maximum")
+  deployment_minimum_healthy_percent = lookup(var.ecs_application_deployment_count, "minimum_percent")
+  deployment_maximum_percent         = lookup(var.ecs_application_deployment_count, "maximum_percent")
   # network_configuration {
   #   subnets          = var.subnet_ids
   #   security_groups  = [aws_security_group.ec2_internal_sg.id]

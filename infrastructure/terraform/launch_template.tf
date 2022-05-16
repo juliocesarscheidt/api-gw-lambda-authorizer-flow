@@ -20,7 +20,7 @@ resource "aws_launch_template" "ec2_launch_template" {
   }
   key_name = var.ec2_ssh_key_name
   network_interfaces {
-    associate_public_ip_address = true
+    associate_public_ip_address = false
     security_groups             = [aws_security_group.ec2_internal_sg.id]
   }
   block_device_mappings {

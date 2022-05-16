@@ -1,15 +1,16 @@
 #!/usr/bin/make
 
 SHELL=/bin/bash
-
 ENV?=development
-
-LAMBDA_NAME?=lambda-authorizer
-LAMBDA_VERSION?=0.0.1
-
-AWS_USERNAME?="AWS"
+# Lambda variables
+LAMBDA_AUTHORIZER_NAME?=lambda-authorizer
+LAMBDA_AUTHORIZER_VERSION?=0.0.1
+LAMBDA_AUTHENTICATOR_NAME?=lambda-authenticator
+LAMBDA_AUTHENTICATOR_VERSION?=0.0.1
+# AWS variables
+AWS_USERNAME?=AWS
 AWS_REGION?=us-east-1
-
+# Docker registry variables
 DOCKER_REGISTRY_REGION?=us-east-1
 DOCKER_REGISTRY?=000000000000.dkr.ecr.$(DOCKER_REGISTRY_REGION).amazonaws.com
 
@@ -19,41 +20,52 @@ docker-login:
 		$(DOCKER_REGISTRY)
 
 create-docker-repo: docker-login
-	aws ecr describe-repositories --repository-names $(LAMBDA_NAME)-$(ENV) \
+	aws ecr describe-repositories --repository-names $(LAMBDA_AUTHORIZER_NAME)-$(ENV) \
 		--region $(DOCKER_REGISTRY_REGION) || aws ecr create-repository \
-			--repository-name $(LAMBDA_NAME)-$(ENV) --region $(DOCKER_REGISTRY_REGION) \
+			--repository-name $(LAMBDA_AUTHORIZER_NAME)-$(ENV) --region $(DOCKER_REGISTRY_REGION) \
+			--image-scanning-configuration scanOnPush=false --image-tag-mutability MUTABLE
+	aws ecr describe-repositories --repository-names $(LAMBDA_AUTHENTICATOR_NAME)-$(ENV) \
+		--region $(DOCKER_REGISTRY_REGION) || aws ecr create-repository \
+			--repository-name $(LAMBDA_AUTHENTICATOR_NAME)-$(ENV) --region $(DOCKER_REGISTRY_REGION) \
 			--image-scanning-configuration scanOnPush=false --image-tag-mutability MUTABLE
 
 build-image:
-	docker image build --tag $(DOCKER_REGISTRY)/$(LAMBDA_NAME)-$(ENV):$(LAMBDA_VERSION) ./lambda-authorizer
+	docker image build --tag $(DOCKER_REGISTRY)/$(LAMBDA_AUTHORIZER_NAME)-$(ENV):$(LAMBDA_AUTHORIZER_VERSION) ./lambda-authorizer
+	docker image build --tag $(DOCKER_REGISTRY)/$(LAMBDA_AUTHENTICATOR_NAME)-$(ENV):$(LAMBDA_AUTHENTICATOR_VERSION) ./lambda-authenticator
 
 push-image: create-docker-repo build-image
-	docker image push $(DOCKER_REGISTRY)/$(LAMBDA_NAME)-$(ENV):$(LAMBDA_VERSION)
+	docker image push $(DOCKER_REGISTRY)/$(LAMBDA_AUTHORIZER_NAME)-$(ENV):$(LAMBDA_AUTHORIZER_VERSION)
+	docker image push $(DOCKER_REGISTRY)/$(LAMBDA_AUTHENTICATOR_NAME)-$(ENV):$(LAMBDA_AUTHENTICATOR_VERSION)
 
 fmt:
-	terraform fmt -write=true -recursive
+	cd $$(pwd)/infrastructure/terraform && terraform fmt -write=true -recursive
 
 validate:
-	terraform validate
+	cd $$(pwd)/infrastructure/terraform && terraform validate
 
 init:
-	terraform init -reconfigure \
+	cd $$(pwd)/infrastructure/terraform && terraform init -reconfigure \
 		-backend=true \
 		-upgrade=true
 
 plan: validate
-	terraform plan \
+	cd $$(pwd)/infrastructure/terraform && terraform plan \
 		-input=false \
 		-out=tfplan \
 		-var-file=terraform.tfvars \
 		-var docker_registry=$(DOCKER_REGISTRY) \
-		-var lambda_name=$(LAMBDA_NAME) \
-		-var lambda_version=$(LAMBDA_VERSION) \
+		-var lambda_authorizer_name=$(LAMBDA_AUTHORIZER_NAME) \
+		-var lambda_authorizer_version=$(LAMBDA_AUTHORIZER_VERSION) \
+		-var lambda_authenticator_name=$(LAMBDA_AUTHENTICATOR_NAME) \
+		-var lambda_authenticator_version=$(LAMBDA_AUTHENTICATOR_VERSION) \
 		-var aws_region=$(AWS_REGION)
 
 apply: plan
-	terraform apply tfplan
+	cd $$(pwd)/infrastructure/terraform && terraform apply tfplan
 	make output
 
 output:
-	terraform output
+	cd $$(pwd)/infrastructure/terraform && terraform output
+
+destroy:
+	cd $$(pwd)/infrastructure/terraform && terraform destroy -auto-approve -input=false
