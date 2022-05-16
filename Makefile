@@ -43,12 +43,19 @@ fmt:
 validate:
 	cd $$(pwd)/infrastructure/terraform && terraform validate
 
+lint:
+	cd $$(pwd)/infrastructure/terraform && docker container run --rm -t \
+		--name tflint \
+		--env TFLINT_LOG=debug \
+		-v $$(pwd):/data \
+		ghcr.io/terraform-linters/tflint
+
 init:
 	cd $$(pwd)/infrastructure/terraform && terraform init -reconfigure \
 		-backend=true \
 		-upgrade=true
 
-plan: validate
+plan: validate lint
 	cd $$(pwd)/infrastructure/terraform && terraform plan \
 		-input=false \
 		-out=tfplan \
