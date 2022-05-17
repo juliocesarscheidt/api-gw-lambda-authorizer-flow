@@ -21,11 +21,13 @@ resource "aws_lambda_function" "lambda_function_authorizer" {
   timeout       = 30 # 30 seconds
   memory_size   = 512
   publish       = true
+  # kms_key_arn   = aws_kms_key.customer_key.arn
   environment {
     variables = var.lambda_authorizer_environment_config
   }
   depends_on = [
     aws_iam_role.lambda_iam_role,
+    # aws_kms_key.customer_key,
   ]
   tags = merge(var.tags, {
     "Name" = "${var.lambda_authorizer_name}-${var.env}"
@@ -55,11 +57,13 @@ resource "aws_lambda_function" "lambda_function_authenticator" {
   timeout       = 30 # 30 seconds
   memory_size   = 512
   publish       = true
+  # kms_key_arn   = aws_kms_key.customer_key.arn
   environment {
     variables = var.lambda_authenticator_environment_config
   }
   depends_on = [
     aws_iam_role.lambda_iam_role,
+    # aws_kms_key.customer_key,
   ]
   tags = merge(var.tags, {
     "Name" = "${var.lambda_authenticator_name}-${var.env}"

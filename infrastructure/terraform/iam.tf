@@ -110,7 +110,7 @@ resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_ecr" {
   ]
 }
 
-############################### Lambda Authorizer Invocation ###############################
+############################### DynamoDB ###############################
 resource "aws_iam_policy" "dynamodb_lamdbda_handler_policy" {
   name   = "dynamodb-lamdbda-handler-policy-${var.env}"
   policy = <<EOF
@@ -123,11 +123,14 @@ resource "aws_iam_policy" "dynamodb_lamdbda_handler_policy" {
         "dynamodb:PutItem"
       ],
       "Effect": "Allow",
-      "Resource": "*"
+      "Resource": "${aws_dynamodb_table.users_tbl.arn}"
     }
   ]
 }
 EOF
+  depends_on = [
+    aws_dynamodb_table.users_tbl,
+  ]
 }
 
 resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_dynamodb" {
@@ -139,7 +142,38 @@ resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_dynamodb" {
   ]
 }
 
-############################### Lambda Authorizer Invocation ###############################
+# ############################### KMS ###############################
+# resource "aws_iam_policy" "kms_lamdbda_handler_policy" {
+#   name   = "kms-lamdbda-handler-policy-${var.env}"
+#   policy = <<EOF
+# {
+#   "Version": "2012-10-17",
+#   "Statement": [
+#     {
+#       "Action": [
+#         "kms:Decrypt"
+#       ],
+#       "Effect": "Allow",
+#       "Resource": "${aws_kms_key.customer_key.arn}"
+#     }
+#   ]
+# }
+# EOF
+#   depends_on = [
+#     aws_kms_key.customer_key,
+#   ]
+# }
+
+# resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_kms" {
+#   role       = aws_iam_role.lambda_iam_role.name
+#   policy_arn = aws_iam_policy.kms_lamdbda_handler_policy.arn
+#   depends_on = [
+#     aws_iam_role.lambda_iam_role,
+#     aws_iam_policy.kms_lamdbda_handler_policy,
+#   ]
+# }
+
+############################### API GW Invocation  ###############################
 resource "aws_iam_role" "lambda_iam_invocation_api_gw_role" {
   name               = "lambda-iam-invocation-api-gw-role-${var.env}"
   assume_role_policy = <<EOF

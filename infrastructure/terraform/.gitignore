@@ -3,3 +3,5 @@
 output.json
 tfplan
 .terraform*
+development.tfvars
+production.tfvars
