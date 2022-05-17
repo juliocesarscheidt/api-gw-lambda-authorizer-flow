@@ -1,10 +1,27 @@
 import os
 import jwt
+import boto3
 
 from datetime import datetime
+from base64 import b64decode
 
-JWT_SECRET = os.environ.get("JWT_SECRET", "SECRET")
-ENV = os.environ.get("ENV", "local")
+kms_client = boto3.client("kms")
+
+
+def decrypt_secret(secret_name):
+    SECRET = os.environ[secret_name]
+    if os.environ.get("ENV") == "local":
+        return SECRET
+    return kms_client.decrypt(
+        CiphertextBlob=b64decode(SECRET),
+        EncryptionContext={
+            "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
+        },
+    )["Plaintext"].decode("utf-8")
+
+
+JWT_SECRET = os.environ["JWT_SECRET"]
+ENV = os.environ["ENV"]
 
 
 def generate_policy(principal_id, effect, resource, context=None):

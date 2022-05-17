@@ -1,5 +1,5 @@
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2-instance-profile-default-ecs-ami-${var.env}"
+  name = "ec2-instance-profile-ecs-${var.env}"
   role = var.ec2_role_name
 }
 
@@ -12,7 +12,7 @@ data "template_file" "user_data" {
 }
 
 resource "aws_launch_template" "ec2_launch_template" {
-  name          = "ec2-launch-template-default-ecs-ami-${var.env}"
+  name          = "ec2-launch-template-ecs-${var.env}"
   image_id      = var.ec2_ami_id == "" ? data.aws_ami.amazon_linux_ecs.id : var.ec2_ami_id
   instance_type = var.ec2_instance_type
   iam_instance_profile {
@@ -32,12 +32,12 @@ resource "aws_launch_template" "ec2_launch_template" {
     }
   }
   tags = merge(var.tags, {
-    "Name" = "ec2-launch-template-default-ecs-ami-${var.env}"
+    "Name" = "ec2-launch-template-ecs-${var.env}"
   })
   tag_specifications {
     resource_type = "instance"
     tags = merge(var.tags, {
-      "Name" = "ec2-instance-default-ecs-ami-${var.env}"
+      "Name" = "ec2-instance-ecs-${var.env}"
     })
   }
   user_data = base64encode(data.template_file.user_data.rendered)

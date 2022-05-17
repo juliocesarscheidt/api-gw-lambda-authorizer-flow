@@ -5,11 +5,26 @@ import boto3
 import bcrypt
 
 from datetime import datetime
+from base64 import b64decode
 
 dynamodb_client = boto3.client("dynamodb")
+kms_client = boto3.client("kms")
 
-JWT_SECRET = os.environ.get("JWT_SECRET", "SECRET")
-ENV = os.environ.get("ENV", "local")
+
+def decrypt_secret(secret_name):
+    SECRET = os.environ[secret_name]
+    if os.environ.get("ENV") == "local":
+        return SECRET
+    return kms_client.decrypt(
+        CiphertextBlob=b64decode(SECRET),
+        EncryptionContext={
+            "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
+        },
+    )["Plaintext"].decode("utf-8")
+
+
+JWT_SECRET = os.environ["JWT_SECRET"]
+ENV = os.environ["ENV"]
 
 DYNAMODB_TABLE_NAME = f"users_tbl_{ENV}"
 DEFAULT_HEADERS = {

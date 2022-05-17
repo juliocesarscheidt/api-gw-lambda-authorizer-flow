@@ -1,5 +1,5 @@
 resource "aws_autoscaling_group" "ec2_asg" {
-  name                      = "ec2-asg-default-ecs-${var.env}"
+  name                      = "ec2-asg-ecs-${var.env}"
   capacity_rebalance        = true
   desired_capacity          = lookup(var.ec2_asg_deployment_count, "desired")
   min_size                  = lookup(var.ec2_asg_deployment_count, "minimum_size")
@@ -15,7 +15,7 @@ resource "aws_autoscaling_group" "ec2_asg" {
   }
   tag {
     key                 = "Name"
-    value               = "ec2-asg-default-ecs-${var.env}"
+    value               = "ec2-asg-ecs-${var.env}"
     propagate_at_launch = false
   }
   depends_on = [
