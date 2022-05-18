@@ -34,8 +34,7 @@ variable "lambda_authorizer_version" {
 
 variable "lambda_authorizer_environment_config" {
   type = object({
-    JWT_SECRET = string
-    ENV        = string
+    ENV = string
   })
 }
 
@@ -52,9 +51,13 @@ variable "lambda_authenticator_version" {
 
 variable "lambda_authenticator_environment_config" {
   type = object({
-    JWT_SECRET = string
-    ENV        = string
+    ENV = string
   })
+}
+
+variable "lambda_jwt_secret" {
+  type        = string
+  description = "Lambda JWT Secret"
 }
 
 variable "docker_registry" {
