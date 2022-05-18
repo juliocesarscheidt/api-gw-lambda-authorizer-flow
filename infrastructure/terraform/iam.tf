@@ -142,36 +142,67 @@ resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_dynamodb" {
   ]
 }
 
-# ############################### KMS ###############################
-# resource "aws_iam_policy" "kms_lamdbda_handler_policy" {
-#   name   = "kms-lamdbda-handler-policy-${var.env}"
-#   policy = <<EOF
-# {
-#   "Version": "2012-10-17",
-#   "Statement": [
-#     {
-#       "Action": [
-#         "kms:Decrypt"
-#       ],
-#       "Effect": "Allow",
-#       "Resource": "${aws_kms_key.customer_key.arn}"
-#     }
-#   ]
-# }
-# EOF
-#   depends_on = [
-#     aws_kms_key.customer_key,
-#   ]
-# }
+############################### KMS ###############################
+resource "aws_iam_policy" "kms_lamdbda_handler_policy" {
+  name   = "kms-lamdbda-handler-policy-${var.env}"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "kms:Decrypt"
+      ],
+      "Effect": "Allow",
+      "Resource": "${aws_kms_key.customer_key.arn}"
+    }
+  ]
+}
+EOF
+  depends_on = [
+    aws_kms_key.customer_key,
+  ]
+}
 
-# resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_kms" {
-#   role       = aws_iam_role.lambda_iam_role.name
-#   policy_arn = aws_iam_policy.kms_lamdbda_handler_policy.arn
-#   depends_on = [
-#     aws_iam_role.lambda_iam_role,
-#     aws_iam_policy.kms_lamdbda_handler_policy,
-#   ]
-# }
+resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_kms" {
+  role       = aws_iam_role.lambda_iam_role.name
+  policy_arn = aws_iam_policy.kms_lamdbda_handler_policy.arn
+  depends_on = [
+    aws_iam_role.lambda_iam_role,
+    aws_iam_policy.kms_lamdbda_handler_policy,
+  ]
+}
+
+############################### SSM ###############################
+resource "aws_iam_policy" "ssm_lamdbda_handler_policy" {
+  name   = "ssm-lamdbda-handler-policy-${var.env}"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "ssm:GetParameter"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/lambda/${var.env}/jwt-secret"
+    }
+  ]
+}
+EOF
+  depends_on = [
+    aws_ssm_parameter.lambda_jwt_secret,
+  ]
+}
+
+resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda_ssm" {
+  role       = aws_iam_role.lambda_iam_role.name
+  policy_arn = aws_iam_policy.ssm_lamdbda_handler_policy.arn
+  depends_on = [
+    aws_iam_role.lambda_iam_role,
+    aws_iam_policy.ssm_lamdbda_handler_policy,
+  ]
+}
 
 ############################### API GW Invocation  ###############################
 resource "aws_iam_role" "lambda_iam_invocation_api_gw_role" {

@@ -4,6 +4,7 @@
 cd ../infrastructure/terraform/
 
 export API_GW_ENDPOINT="$(terraform output -raw api_gateway_invoke_url)authorizer"
+echo "${API_GW_ENDPOINT}"
 
 curl --silent -X GET "${API_GW_ENDPOINT}/healthcheck"
 # {"message":"Unauthorized"}
@@ -19,6 +20,7 @@ curl --silent -X GET "${API_GW_ENDPOINT}/healthcheck" -H "Authorization: INVALID
 # {"Message":"User is not authorized to access this resource with an explicit deny"}
 
 export TOKEN=$(curl --silent -X GET "${API_GW_ENDPOINT}/signin" -H 'Content-type: Application/json' -X POST --data-raw '{"email": "julioscheidt@mail.com", "password": "SOME_PASSWORD"}' | jq -r '.token')
+echo "${TOKEN}"
 
 curl --silent -X GET "${API_GW_ENDPOINT}/healthcheck" -H "Authorization: ${TOKEN}"
 # {"message":"OK","status":"success"}

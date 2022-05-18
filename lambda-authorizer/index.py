@@ -6,22 +6,26 @@ from datetime import datetime
 from base64 import b64decode
 
 kms_client = boto3.client("kms")
+ssm = boto3.client("ssm")
 
 
 def decrypt_secret(secret_name):
-    SECRET = os.environ[secret_name]
-    if os.environ.get("ENV") == "local":
-        return SECRET
     return kms_client.decrypt(
-        CiphertextBlob=b64decode(SECRET),
+        CiphertextBlob=b64decode(os.environ[secret_name]),
         EncryptionContext={
             "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
         },
     )["Plaintext"].decode("utf-8")
 
 
-JWT_SECRET = os.environ["JWT_SECRET"]
+def get_ssm_parameter(env):
+    return ssm.get_parameter(Name=f"/lambda/{env}/jwt-secret", WithDecryption=True)[
+        "Parameter"
+    ]["Value"]
+
+
 ENV = os.environ["ENV"]
+JWT_SECRET = get_ssm_parameter(ENV)
 
 
 def generate_policy(principal_id, effect, resource, context=None):
