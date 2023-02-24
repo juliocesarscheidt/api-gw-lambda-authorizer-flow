@@ -51,7 +51,7 @@ resource "aws_ecs_service" "ecs_service" {
   deployment_minimum_healthy_percent = lookup(var.ecs_application_deployment_count, "minimum_percent")
   deployment_maximum_percent         = lookup(var.ecs_application_deployment_count, "maximum_percent")
   # network_configuration {
-  #   subnets          = var.subnet_ids
+  #   subnets          = aws_subnet.private_subnet[*].id
   #   security_groups  = [aws_security_group.ec2_internal_sg.id]
   #   assign_public_ip = false
   # }

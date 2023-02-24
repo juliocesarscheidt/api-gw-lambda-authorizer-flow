@@ -43,49 +43,6 @@ resource "aws_api_gateway_integration" "api_gw_integration_root" {
   ]
 }
 
-# # resource, method and integration - healthcheck
-# resource "aws_api_gateway_resource" "api_gw_resource_healthcheck" {
-#   rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
-#   parent_id   = aws_api_gateway_method.api_gw_method_root.resource_id
-#   path_part   = "healthcheck"
-#   depends_on = [
-#     aws_api_gateway_rest_api.api_gw_rest_api
-#   ]
-# }
-
-# resource "aws_api_gateway_method" "api_gw_method_healthcheck" {
-#   rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
-#   resource_id = aws_api_gateway_resource.api_gw_resource_healthcheck.id
-#   # api_key_required   = true
-#   http_method        = "GET"
-#   authorization      = "CUSTOM"
-#   authorizer_id      = aws_api_gateway_authorizer.api_gateway_authorizer.id
-#   request_parameters = {}
-#   depends_on = [
-#     aws_api_gateway_authorizer.api_gateway_authorizer,
-#   ]
-# }
-
-# resource "aws_api_gateway_integration" "api_gw_integration_healthcheck" {
-#   rest_api_id             = aws_api_gateway_rest_api.api_gw_rest_api.id
-#   resource_id             = aws_api_gateway_method.api_gw_method_healthcheck.resource_id
-#   http_method             = aws_api_gateway_method.api_gw_method_healthcheck.http_method
-#   uri                     = "http://${aws_lb.elb_load_balancer.dns_name}:${var.ecs_application_port}/healthcheck"
-#   integration_http_method = "GET"
-#   type                    = "HTTP_PROXY"
-#   request_parameters      = null
-#   request_templates       = null
-#   passthrough_behavior    = "WHEN_NO_MATCH"
-#   connection_type         = "VPC_LINK"
-#   connection_id           = aws_api_gateway_vpc_link.vpc_link.id
-#   depends_on = [
-#     aws_api_gateway_rest_api.api_gw_rest_api,
-#     aws_api_gateway_method.api_gw_method_healthcheck,
-#     aws_lb.elb_load_balancer,
-#     aws_api_gateway_vpc_link.vpc_link,
-#   ]
-# }
-
 # deployment
 resource "aws_api_gateway_deployment" "api_gw_deploy" {
   rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
@@ -93,8 +50,10 @@ resource "aws_api_gateway_deployment" "api_gw_deploy" {
     redeployment = sha1(jsonencode([
       aws_api_gateway_method.api_gw_method_root.id,
       aws_api_gateway_integration.api_gw_integration_root.id,
-      aws_api_gateway_method.api_gw_method_healthcheck.id,
-      aws_api_gateway_integration.api_gw_integration_healthcheck.id,
+      aws_api_gateway_method.api_gw_method_message.id,
+      aws_api_gateway_integration.api_gw_integration_message.id,
+      aws_api_gateway_method.api_gw_method_configuration.id,
+      aws_api_gateway_integration.api_gw_integration_configuration.id,
       aws_api_gateway_method.api_gw_method_signin.id,
       aws_api_gateway_integration.api_gw_integration_signin.id,
       aws_api_gateway_method.api_gw_method_signup.id,
@@ -108,8 +67,10 @@ resource "aws_api_gateway_deployment" "api_gw_deploy" {
     aws_api_gateway_rest_api.api_gw_rest_api,
     aws_api_gateway_method.api_gw_method_root,
     aws_api_gateway_integration.api_gw_integration_root,
-    aws_api_gateway_method.api_gw_method_healthcheck,
-    aws_api_gateway_integration.api_gw_integration_healthcheck,
+    aws_api_gateway_method.api_gw_method_message,
+    aws_api_gateway_integration.api_gw_integration_message,
+    aws_api_gateway_method.api_gw_method_configuration,
+    aws_api_gateway_integration.api_gw_integration_configuration,
     aws_api_gateway_method.api_gw_method_signin,
     aws_api_gateway_integration.api_gw_integration_signin,
     aws_api_gateway_method.api_gw_method_signup,

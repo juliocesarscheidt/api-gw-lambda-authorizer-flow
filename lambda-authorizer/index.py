@@ -14,6 +14,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
 )
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def decrypt_secret(secret_name):
@@ -85,17 +86,17 @@ def handler(event=None, context=None, callback=None):
     logger.info(callback)
 
     resource = event["methodArn"]
-    logger.info("methodArn " + resource)
+    logger.info(resource)
 
     token = event["authorizationToken"]
-    logger.info("authorizationToken " + token)
+    logger.info(token)
 
     if token is None or token == "":
         return generate_policy("anonymous", "Deny", resource)
 
     try:
         token_decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        logger.info("token_decoded " + token_decoded)
+        logger.info(token_decoded)
     except Exception as e:
         logger.error(e)
         return generate_policy("anonymous", "Deny", resource)

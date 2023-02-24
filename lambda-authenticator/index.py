@@ -13,6 +13,8 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
 )
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 
 dynamodb_client = boto3.client("dynamodb")
 kms_client = boto3.client("kms")
@@ -135,7 +137,7 @@ def do_signin(body):
         }
 
     token = generate_token({"email": data["email"], "username": data["username"],})
-    logger.info("token " + str(token))
+    logger.info(token)
 
     return {
         "statusCode": "200",

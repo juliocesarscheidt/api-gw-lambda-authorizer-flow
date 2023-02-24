@@ -2,6 +2,7 @@
 resource "aws_api_gateway_resource" "api_gw_resource_signin" {
   rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
   parent_id   = aws_api_gateway_method.api_gw_method_root.resource_id
+  # path endpoint
   path_part   = "signin"
   depends_on = [
     aws_api_gateway_rest_api.api_gw_rest_api
@@ -39,6 +40,7 @@ resource "aws_api_gateway_integration" "api_gw_integration_signin" {
 resource "aws_api_gateway_resource" "api_gw_resource_signup" {
   rest_api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
   parent_id   = aws_api_gateway_method.api_gw_method_root.resource_id
+  # path endpoint
   path_part   = "signup"
   depends_on = [
     aws_api_gateway_rest_api.api_gw_rest_api

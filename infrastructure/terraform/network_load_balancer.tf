@@ -2,7 +2,7 @@ resource "aws_lb" "elb_load_balancer" {
   name                       = "elb-internal-${var.env}"
   internal                   = true
   load_balancer_type         = "network"
-  subnets                    = var.subnet_ids
+  subnets                    = aws_subnet.private_subnet[*].id
   enable_deletion_protection = false
   tags = merge(var.tags, {
     "Name" = "elb-internal-${var.env}"
@@ -25,7 +25,7 @@ resource "aws_lb_listener" "elb_listener" {
 
 resource "aws_lb_target_group" "elb_target_group" {
   name                 = "target-group-${var.env}"
-  vpc_id               = var.vpc_id
+  vpc_id               = aws_vpc.vpc_0.id
   target_type          = "instance"
   deregistration_delay = 60
   port                 = var.ecs_application_port

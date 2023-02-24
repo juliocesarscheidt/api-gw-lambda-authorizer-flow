@@ -9,15 +9,10 @@ variable "env" {
   default     = "development"
 }
 
-variable "vpc_id" {
+variable "vpc_cidr" {
   type        = string
-  description = "VPC ID"
-}
-
-variable "subnet_ids" {
-  type        = list(string)
-  description = "IDs of subnets"
-  default     = []
+  description = "VPC CIDR"
+  default = "10.100.0.0/20"
 }
 
 ############################### Lambda ###############################

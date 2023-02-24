@@ -274,6 +274,12 @@ resource "aws_iam_role_policy_attachment" "attach_ec2_role_amazon_ecs_full_acces
   policy_arn = "arn:aws:iam::aws:policy/AmazonECS_FullAccess"
 }
 
+# policy to allow interaction using SSM with the instance
+resource "aws_iam_role_policy_attachment" "attach_ec2_role_amazon_ssm_managed_instance_core" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 ############################### ECS role ###############################
 resource "aws_iam_role" "ecs_task_execution_role" {
   name               = "AmazonECSTaskExecutionRole"

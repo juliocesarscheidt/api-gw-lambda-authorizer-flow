@@ -14,7 +14,7 @@ resource "aws_api_gateway_usage_plan" "api_gw_usage_plan" {
   name  = "${var.api_gw_usage_plan_name}-${var.env}"
   api_stages {
     api_id = aws_api_gateway_rest_api.api_gw_rest_api.id
-    stage  = aws_api_gateway_stage.api_gw_plan_stage.0.stage_name
+    stage  = aws_api_gateway_stage.api_gw_plan_stage[0].stage_name
   }
   quota_settings {
     limit  = lookup(var.api_gw_usage_plan_quota_settings, "limit")
@@ -41,9 +41,9 @@ resource "aws_api_gateway_api_key" "api_gw_api_key" {
 
 resource "aws_api_gateway_usage_plan_key" "main" {
   count         = var.api_gw_usage_plan_enabled ? 1 : 0
-  key_id        = aws_api_gateway_api_key.api_gw_api_key.0.id
+  key_id        = aws_api_gateway_api_key.api_gw_api_key[0].id
   key_type      = "API_KEY"
-  usage_plan_id = aws_api_gateway_usage_plan.api_gw_usage_plan.0.id
+  usage_plan_id = aws_api_gateway_usage_plan.api_gw_usage_plan[0].id
   depends_on = [
     aws_api_gateway_api_key.api_gw_api_key,
     aws_api_gateway_usage_plan.api_gw_usage_plan,

@@ -8,7 +8,7 @@ resource "aws_autoscaling_group" "ec2_asg" {
   health_check_type         = "ELB"
   force_delete              = true
   target_group_arns         = [aws_lb_target_group.elb_target_group.id]
-  vpc_zone_identifier       = var.subnet_ids
+  vpc_zone_identifier       = aws_subnet.private_subnet[*].id
   launch_template {
     id      = aws_launch_template.ec2_launch_template.id
     version = "$Latest"
