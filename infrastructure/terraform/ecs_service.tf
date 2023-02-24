@@ -6,9 +6,9 @@ resource "aws_cloudwatch_log_group" "ecs_task_log_group" {
 resource "aws_ecs_task_definition" "ecs_task_definition" {
   family = "${var.ecs_application_name}-${var.env}-task-definition"
   # role for task execution, which will be used to pull the image, create log stream, start the task, etc
-  execution_role_arn = var.ecs_application_execution_role_arn
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   # role for task application, to be used by the application itself in execution time, it's optional
-  task_role_arn = var.ecs_application_task_role_arn
+  task_role_arn = ""
   container_definitions = jsonencode([
     {
       name : var.ecs_application_name

@@ -75,13 +75,13 @@ variable "ecs_cluster_name" {
 variable "ecs_application_name" {
   type        = string
   description = "ECS Application Name"
-  default     = "http-simple-api"
+  default     = "go-micro-api"
 }
 
 variable "ecs_application_version" {
   type        = string
   description = "ECS Application Version"
-  default     = "v2.0.0"
+  default     = "v1.0.0"
 }
 
 variable "ecs_application_registry_repository" {
@@ -93,24 +93,12 @@ variable "ecs_application_registry_repository" {
 variable "ecs_application_port" {
   type        = number
   description = "ECS Application Port"
-  default     = 5000
+  default     = 9000
 }
 
 variable "ecs_application_environment" {
   type        = list(any)
   description = "Config for app container environment"
-}
-
-variable "ecs_application_execution_role_arn" {
-  type        = string
-  description = "ECS Application Execution Role ARN"
-  default     = ""
-}
-
-variable "ecs_application_task_role_arn" {
-  type        = string
-  description = "ECS Application Task Role ARN"
-  default     = ""
 }
 
 variable "ecs_application_deployment_count" {
@@ -124,12 +112,6 @@ variable "ecs_application_deployment_count" {
 }
 
 ############################### EC2 ###############################
-variable "ec2_role_name" {
-  type        = string
-  description = "Instance Role Name"
-  default     = "AmazonEC2Role"
-}
-
 variable "ec2_instance_type" {
   type        = string
   description = "Instance Type"
@@ -146,11 +128,6 @@ variable "ec2_ami_id" {
   type        = string
   description = "AMI Id"
   default     = "ami-0f260fe26c2826a3d"
-}
-
-variable "ec2_ssh_key_name" {
-  type        = string
-  description = "SSH key name for accessing instances"
 }
 
 variable "ec2_asg_deployment_count" {
