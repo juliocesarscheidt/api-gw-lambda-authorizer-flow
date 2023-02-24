@@ -16,7 +16,7 @@ AWS_DEFAULT_REGION?=us-east-1
 AWS_BACKEND_BUCKET?=
 AWS_BACKEND_ACCESS_KEY_ID?=
 AWS_BACKEND_SECRET_ACCESS_KEY?=
-AWS_BACKEND_REGION?=sa-east-1
+AWS_BACKEND_REGION?=us-east-1
 # docker variables
 DOCKER_REGISTRY?=000000000000.dkr.ecr.$(AWS_DEFAULT_REGION).amazonaws.com
 
@@ -43,9 +43,8 @@ push-image: docker-login build-image create-ecr-repo
 	docker image push $(DOCKER_REGISTRY)/$(LAMBDA_AUTHENTICATOR_NAME)-$(ENV):$(LAMBDA_AUTHENTICATOR_VERSION)
 
 create-backend-bucket:
-	aws s3 ls s3://$(AWS_BACKEND_BUCKET) --region $(AWS_BACKEND_REGION) || \
-		aws s3api create-bucket --bucket $(AWS_BACKEND_BUCKET) --region $(AWS_BACKEND_REGION) \
-			--create-bucket-configuration LocationConstraint=$(AWS_BACKEND_REGION) --acl private
+	-@aws s3 ls s3://$(AWS_BACKEND_BUCKET) --region $(AWS_BACKEND_REGION) 2> /dev/null || \
+		aws s3api create-bucket --bucket $(AWS_BACKEND_BUCKET) --region $(AWS_BACKEND_REGION) --acl private
 
 create-workspace:
 	-@terraform workspace new development 2> /dev/null
@@ -94,7 +93,7 @@ plan: validate lint
 
 apply:
 	terraform apply $(PLAN_FILE)
-	@echo "API GW on https://$$(terraform output -raw api_gateway_invoke_url)"
+	@echo "API GW on $$(terraform output -raw api_gateway_invoke_url)"
 
 output:
 	terraform output

@@ -3,25 +3,31 @@
 ```bash
 cd ../infrastructure/terraform/
 
-export API_GW_ENDPOINT="$(terraform output -raw api_gateway_invoke_url)authorizer"
+export STAGE_NAME="authorizer"
+export API_GW_ENDPOINT="$(terraform output -raw api_gateway_invoke_url)${STAGE_NAME}"
 echo "${API_GW_ENDPOINT}"
 
-curl --silent -X GET "${API_GW_ENDPOINT}/healthcheck"
+curl --silent --url "${API_GW_ENDPOINT}/message"
+# {"message":"Unauthorized"}
+curl --silent -X PUT --data '{"message": "Hello World v2"}' --url "${API_GW_ENDPOINT}/configuration"
 # {"message":"Unauthorized"}
 
 # SignUp - creates the user
-curl --silent -X GET "${API_GW_ENDPOINT}/signup" -H 'Content-type: Application/json' -X POST --data-raw '{"email": "julioscheidt@mail.com", "username": "julioscheidt", "password": "SOME_PASSWORD"}'
+curl --silent --url "${API_GW_ENDPOINT}/signup" -H 'Content-type: Application/json' -X POST --data-raw '{"email": "julioscheidt@mail.com", "username": "julioscheidt", "password": "PASSWORD"}'
+
+curl --silent --url "${API_GW_ENDPOINT}/signin" -H 'Content-type: Application/json' -X POST --data-raw '{"email": "julioscheidt@mail.com", "password": "NONE"}'
+# {"message": "Unauthorized"}
 
 # SignIn - get token
-curl --silent -X GET "${API_GW_ENDPOINT}/signin" -H 'Content-type: Application/json' -X POST --data-raw '{"email": "julioscheidt@mail.com", "password": "SOME_PASSWORD"}'
-# {"token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6Imp1bGlvc2NoZWlkdEBtYWlsLmNvbSIsInVzZXJuYW1lIjoianVsaW9zY2hlaWR0IiwiaWF0IjoxNjUyNzU2NDY0LjcyMzgyNSwiZXhwIjoxNjUyNzYwMDY0LjcyMzgyNX0.sJyv-RXS_9b60UMAysvm0XEYXTmtC2nlp9n8HE-YFFA"}
+export TOKEN=$(curl --silent --url "${API_GW_ENDPOINT}/signin" -H 'Content-type: Application/json' -X POST --data-raw '{"email": "julioscheidt@mail.com", "password": "PASSWORD"}' | jq -r '.token')
+echo "${TOKEN}"
+# eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6Imp1bGlvc2NoZWlkdEBtYWlsLmNvbSIsInVzZXJuYW1lIjoianVsaW9zY2hlaWR0IiwiaWF0IjoxNjc3MjU2NjY2LjUwMjA0MiwiZXhwIjoxNjc3MjYwMjY2LjUwMjA0Mn0.76XIhnClUlrB5tpGibHJBUi2ydTaPTt9WHRqZxbX36U
 
-curl --silent -X GET "${API_GW_ENDPOINT}/healthcheck" -H "Authorization: INVALID"
+curl --silent --url "${API_GW_ENDPOINT}/message" -H "Authorization: NONE"
 # {"Message":"User is not authorized to access this resource with an explicit deny"}
 
-export TOKEN=$(curl --silent -X GET "${API_GW_ENDPOINT}/signin" -H 'Content-type: Application/json' -X POST --data-raw '{"email": "julioscheidt@mail.com", "password": "SOME_PASSWORD"}' | jq -r '.token')
-echo "${TOKEN}"
-
-curl --silent -X GET "${API_GW_ENDPOINT}/healthcheck" -H "Authorization: ${TOKEN}"
-# {"message":"OK","status":"success"}
+curl --silent --url "${API_GW_ENDPOINT}/message" -H "Authorization: ${TOKEN}"
+# {"data":"API v1","statusCode":200}
+curl --silent -X PUT --data '{"message": "Hello World from API GW"}' --url "${API_GW_ENDPOINT}/configuration" -H "Authorization: ${TOKEN}"
+# {"data":null,"statusCode":202}
 ```

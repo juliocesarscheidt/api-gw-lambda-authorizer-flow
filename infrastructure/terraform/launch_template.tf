@@ -1,6 +1,9 @@
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
   name = "ec2-instance-profile-ecs-${var.env}"
-  role = var.ec2_role_name
+  role = aws_iam_role.ec2_role.name
+  depends_on = [
+    aws_iam_role.ec2_role,
+  ]
 }
 
 data "template_file" "user_data" {
@@ -11,6 +14,19 @@ data "template_file" "user_data" {
   }
 }
 
+data "aws_ami" "amazon_linux_ecs" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["amzn-ami-*-amazon-ecs-optimized"]
+  }
+  filter {
+    name   = "owner-alias"
+    values = ["amazon"]
+  }
+}
+
 resource "aws_launch_template" "ec2_launch_template" {
   name          = "ec2-launch-template-ecs-${var.env}"
   image_id      = var.ec2_ami_id == "" ? data.aws_ami.amazon_linux_ecs.id : var.ec2_ami_id
@@ -18,7 +34,7 @@ resource "aws_launch_template" "ec2_launch_template" {
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2_instance_profile.name
   }
-  key_name = var.ec2_ssh_key_name
+  key_name = aws_key_pair.ec2_key_pair.key_name
   network_interfaces {
     associate_public_ip_address = false
     security_groups             = [aws_security_group.ec2_internal_sg.id]

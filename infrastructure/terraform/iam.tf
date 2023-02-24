@@ -1,3 +1,4 @@
+############################### Lambda role ###############################
 resource "aws_iam_role" "lambda_iam_role" {
   name               = "lambda-iam-role-${var.env}"
   assume_role_policy = <<EOF
@@ -243,4 +244,66 @@ EOF
     aws_iam_role.lambda_iam_invocation_api_gw_role,
     aws_lambda_function.lambda_function_authorizer,
   ]
+}
+
+############################### EC2 role ###############################
+resource "aws_iam_role" "ec2_role" {
+  name               = "ec2-role-ecs-${var.env}"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {
+      "Service": ["ec2.amazonaws.com"]
+    },
+    "Action": "sts:AssumeRole",
+    "Sid": ""
+  }]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ec2_role_amazon_ec2_full_access" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ec2_role_amazon_ecs_full_access" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonECS_FullAccess"
+}
+
+# policy to allow interaction using SSM with the instance
+resource "aws_iam_role_policy_attachment" "attach_ec2_role_amazon_ssm_managed_instance_core" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+############################### ECS role ###############################
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name               = "AmazonECSTaskExecutionRole"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Action": "sts:AssumeRole",
+    "Principal": {
+      "Service": ["ecs-tasks.amazonaws.com"]
+    },
+    "Effect": "Allow",
+    "Sid": ""
+  }]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "attach_AmazonECSTaskExecutionRolePolicy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "attach_AmazonECS_FullAccess" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonECS_FullAccess"
 }

@@ -3,9 +3,18 @@ import jwt
 import json
 import boto3
 import bcrypt
+import logging
 
 from datetime import datetime
 from base64 import b64decode
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
+)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 
 dynamodb_client = boto3.client("dynamodb")
 kms_client = boto3.client("kms")
@@ -77,7 +86,7 @@ def do_signup(body):
             TableName=DYNAMODB_TABLE_NAME,
         )
     except Exception as e:
-        print(e)
+        logger.error(e)
         return {
             "statusCode": "500",
             "body": json.dumps({"message": "Internal Server Error"}),
@@ -102,7 +111,7 @@ def do_signin(body):
             TableName=DYNAMODB_TABLE_NAME,
         )
     except Exception as e:
-        print(e)
+        logger.error(e)
         return {
             "statusCode": "500",
             "body": json.dumps({"message": "Internal Server Error"}),
@@ -110,7 +119,7 @@ def do_signin(body):
         }
 
     if "Item" not in response or response["Item"] is None:
-        print("Failed - Not Found")
+        logger.info("Failed - Not Found")
         return {
             "statusCode": "404",
             "body": json.dumps({"message": "Not Found"}),
@@ -120,7 +129,7 @@ def do_signin(body):
     data = format_user_data(response["Item"])
 
     if not bcrypt.checkpw(str.encode(password), str.encode(data["password"])):
-        print("Failed - Unauthorized")
+        logger.info("Failed - Unauthorized")
         return {
             "statusCode": "401",
             "body": json.dumps({"message": "Unauthorized"}),
@@ -128,7 +137,7 @@ def do_signin(body):
         }
 
     token = generate_token({"email": data["email"], "username": data["username"],})
-    print("token", token)
+    logger.info(token)
 
     return {
         "statusCode": "200",
@@ -144,57 +153,17 @@ def handle_event(path, body):
         response = do_signup(body)
     else:
         response = {
-            "statusCode": "500",
-            "body": json.dumps({"message": "Internal Server Error"}),
+            "statusCode": "405",
+            "body": json.dumps({"message": "Method Not Allowed"}),
             "headers": DEFAULT_HEADERS,
         }
     return response
 
 
 def handler(event=None, context=None, callback=None):
-    print("event", event)
-    print("context", context)
-    print("callback", callback)
+    logger.info(event)
+    logger.info(context)
+    logger.info(callback)
 
     body = json.loads(event["body"])
-    print("body", body)
-
     return handle_event(event["path"], body)
-
-
-if ENV == "local":
-    event = {
-        "resource": "/signin",
-        "path": "/signin",
-        "httpMethod": "POST",
-        "headers": {},
-        "multiValueHeaders": {},
-        "queryStringParameters": None,
-        "multiValueQueryStringParameters": None,
-        "pathParameters": None,
-        "stageVariables": None,
-        "requestContext": {
-            "resourceId": "aaaa",
-            "resourcePath": "/signin",
-            "httpMethod": "POST",
-            "extendedRequestId": "A=",
-            "requestTime": "15/May/2022:00:00:00 +0000",
-            "path": "/authorizer/signin",
-            "accountId": "000000000000",
-            "protocol": "HTTP/1.1",
-            "stage": "authorizer",
-            "domainPrefix": "aaaa",
-            "requestTimeEpoch": 0,
-            "requestId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-            "identity": {},
-            "domainName": "",
-            "apiId": "aaaa",
-        },
-        "body": '{"email": "julioscheidt@mail.com", "password": "PASSWORD"}',
-        "isBase64Encoded": False,
-    }
-
-    def callable_fn_mock(response=None, value=None):
-        pass
-
-    handler(event, None, callable_fn_mock)

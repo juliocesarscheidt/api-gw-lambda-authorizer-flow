@@ -1,12 +1,20 @@
 import os
 import jwt
 import boto3
+import logging
 
 from datetime import datetime
 from base64 import b64decode
 
 kms_client = boto3.client("kms")
 ssm = boto3.client("ssm")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
+)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def decrypt_secret(secret_name):
@@ -68,33 +76,33 @@ def generate_policy(principal_id, effect, resource, context=None):
             {"context": {"username": context["username"], "email": context["email"]}}
         )
 
-    print("auth_response", auth_response)
+    logger.info(auth_response)
     return auth_response
 
 
 def handler(event=None, context=None, callback=None):
-    print("event", event)
-    print("context", context)
-    print("callback", callback)
+    logger.info(event)
+    logger.info(context)
+    logger.info(callback)
 
     resource = event["methodArn"]
-    print("resource", resource)
+    logger.info(resource)
 
     token = event["authorizationToken"]
-    print("token", token)
+    logger.info(token)
 
     if token is None or token == "":
         return generate_policy("anonymous", "Deny", resource)
 
     try:
         token_decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        print("token_decoded", token_decoded)
+        logger.info(token_decoded)
     except Exception as e:
-        print(e)
+        logger.error(e)
         return generate_policy("anonymous", "Deny", resource)
 
     if "username" not in token_decoded or "email" not in token_decoded:
-        print("Invalid username or email")
+        logger.info("Invalid username or email")
         return generate_policy("anonymous", "Deny", resource)
 
     principal_id = token_decoded["email"]
@@ -103,20 +111,7 @@ def handler(event=None, context=None, callback=None):
     timestamp = datetime.timestamp(now)
 
     if "exp" not in token_decoded or token_decoded["exp"] < timestamp:
-        print("Token invalid or has expired")
+        logger.info("Token invalid or has expired")
         return generate_policy(principal_id, "Deny", resource, token_decoded)
 
     return generate_policy(principal_id, "Allow", resource, token_decoded)
-
-
-if ENV == "local":
-    event = {
-        "type": "TOKEN",
-        "authorizationToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6Imp1bGlvc2NoZWlkdEBtYWlsLmNvbSIsInVzZXJuYW1lIjoianVsaW9zY2hlaWR0IiwiaWF0IjoxNjUyNjYzMzg4LjYyNTI5OCwiZXhwIjoxNjUyNjY2OTg4LjYyNTI5OH0.qjm_OJ5ltdMjaGtap69x25YiNjZO4O-HKIQ2luuIso8",
-        "methodArn": "arn:aws:execute-api:us-east-1:XXXXXXXXXXXX:abc1234abc/*/GET/",
-    }
-
-    def callable_fn_mock(response=None, value=None):
-        pass
-
-    handler(event, None, callable_fn_mock)
